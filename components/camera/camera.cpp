@@ -1,25 +1,8 @@
 #include "esp32_camera.h"
+#include "camera.h"
 
-#define CAM_PIN_PWDN    17//power down is not used
-#define CAM_PIN_RESET   14 //software reset will be performed
-#define CAM_PIN_XCLK    15
-#define CAM_PIN_SIOD    6
-#define CAM_PIN_SIOC    7
-
-//Y0 and Y1 doesn't initialize
-#define CAM_PIN_D7      12
-#define CAM_PIN_D6      11
-#define CAM_PIN_D5      10
-#define CAM_PIN_D4      9
-#define CAM_PIN_D3      5
-#define CAM_PIN_D2      3
-#define CAM_PIN_D1      2
-#define CAM_PIN_D0      4
-#define CAM_PIN_VSYNC   18
-#define CAM_PIN_HREF    13
-#define CAM_PIN_PCLK    8
-
-static camera_config_t camera_config = {
+esp_err_t camera_init(){
+    static camera_config_t camera_config = {
     .pin_pwdn  = CAM_PIN_PWDN,
     .pin_reset = CAM_PIN_RESET,
     .pin_xclk = CAM_PIN_XCLK,
@@ -49,8 +32,6 @@ static camera_config_t camera_config = {
     .fb_count = 1, //When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY//CAMERA_GRAB_LATEST. Sets when buffers should be filled
 };
-
-esp_err_t camera_init(){
     //power up the camera if PWDN pin is defined
     if(CAM_PIN_PWDN != -1){
         pinMode(CAM_PIN_PWDN, OUTPUT);
@@ -64,5 +45,16 @@ esp_err_t camera_init(){
         return err;
     }
 
+    return ESP_OK;
+}
+
+esp_err_t livestream_ov2640(){
+
+    camera_fb_t * fb = esp_camera_fb_get();
+    if (!fb) {
+        ESP_LOGE(TAG, "Camera Capture Failed");
+        return ESP_FAIL;
+    }
+    esp_camera_fb_return(fb);
     return ESP_OK;
 }
