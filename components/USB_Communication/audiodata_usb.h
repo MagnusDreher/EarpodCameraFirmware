@@ -1,10 +1,16 @@
 #ifndef AUDIODATA_USB_H
 #define AUDIODATA_USB_H
 
-#include <stdint.h>
-#include <stddef.h>
+#include "stdint.h"
+#include "stddef.h"
 #include "freertos/ringbuf.h"
 #include "esp_err.h"
+#include "esp_log.h"
+#include "usb_device_uac.h"
+#include "esp_tinyusb.h"
+#include "freertos/ringbuf.h"
+#include "audio/microphone.h"
+#include "audio/speaker.h"
 
 #ifdef __cplusplus
 extern "C" {

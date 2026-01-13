@@ -1,6 +1,4 @@
-#include "driver/i2s_std.h"
-#include "esp_err.h"
-#include "esp_log.h"
+#include "microphone.h"
 
 
 
@@ -13,7 +11,7 @@ esp_err_t ics43434_init(){
     }
     i2s_std_config_t std_cfg = {
     .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(48000),
-    .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_STEREO),
+    .slot_cfg = I2S_STD_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_STEREO),
     .gpio_cfg = {
         .mclk = I2S_GPIO_UNUSED,
         .bclk = GPIO_NUM_14,

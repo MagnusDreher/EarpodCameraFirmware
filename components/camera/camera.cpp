@@ -1,4 +1,3 @@
-#include "esp32_camera.h"
 #include "camera.h"
 
 esp_err_t camera_init(){

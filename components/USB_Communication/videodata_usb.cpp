@@ -1,9 +1,4 @@
-#include "camera.h"
-#include "esp_err.h"
-#include "esp_log.h"
-#include "usb_device_uvc.h"
-#include "esp_tinyusb.h"
-#include "freertos/ringbuf.h"
+#include "videodata_usb.h"
 
 static const char* TAG = "USB_Video";
 RingbufHandle_t buf_handle_camera;

@@ -1,7 +1,4 @@
-#include "driver/i2s_std.h"
-#include "driver/gpio.h"
-#include "esp_err.h"
-#include "esp_log.h"
+#include "speaker.h"
 
 static const char* TAG = "SPEAKER";
 

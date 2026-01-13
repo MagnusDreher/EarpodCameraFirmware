@@ -1,14 +1,4 @@
-#include "microphone.h"
-#include "speaker.h"
-#include "camera.h"
-#include "esp_err.h"
-#include "esp_log.h"
-#include "usb_device_uac.h"
-#include "esp_tinyusb.h"
-#include "string.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/ringbuf.h"
+#include "audiodata_usb.h"
 
 static const char* TAG = "USB_Audio";
 static RingbufHandle_t buf_handle_microfon = NULL;
