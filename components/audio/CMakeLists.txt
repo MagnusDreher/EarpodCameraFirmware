@@ -1,5 +1,0 @@
-idf_component_register(
-    SRCS "microphone.cpp" "speaker.cpp"
-    INCLUDE_DIRS "."
-    REQUIRES driver  
-)
