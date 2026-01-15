@@ -43,12 +43,9 @@ esp_err_t my_uvc_device_init(){
         return err;
     }
     ESP_LOGI(TAG, "UVC Device initialized");
+    
+    return ESP_OK;
 
-    err= camera_init();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to init Camera: 0x%x", err);
-        return err;
-    }
 
 }
 

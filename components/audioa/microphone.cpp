@@ -26,13 +26,13 @@ esp_err_t ics43434_init(){
     },
     };
 
-    esp_err_t err=i2s_channel_init_std_mode(rx_handle, &std_cfg);
+    err=i2s_channel_init_std_mode(rx_handle, &std_cfg);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "i2s_channel_init_std_mode failed: 0x%x", err);
             return err;
         }
 
-    esp_err_t err=i2s_channel_enable(rx_handle);
+     err=i2s_channel_enable(rx_handle);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "i2s_channel_enable failed: 0x%x", err);
             return err;

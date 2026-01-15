@@ -50,17 +50,6 @@ esp_err_t my_uac_device_init()
     }
     ESP_LOGI(TAG, "UAC Device initialized");
 
-    err= ics43434_init();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to init Microphone: 0x%x", err);
-        return err;
-    }
-
-    err=MAX98357_init();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to init Speaker: 0x%x", err);
-        return err;
-        }
     return ESP_OK;
 }
 
@@ -174,17 +163,3 @@ void usb_task(void *arg)
     }
 }
 
-void audio_app_main(void)
-{
-    esp_err_t err;
-
-    err = my_uac_device_init();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "UAC init failed");
-        return;
-    }
-
-    xTaskCreate(usb_task,        "usb", 4096, NULL, 5, NULL);
-    xTaskCreate(microphone_task,"mic", 4096, NULL, 4, NULL);
-    xTaskCreate(speaker_task,   "spk", 4096, NULL, 4, NULL);
-}
