@@ -1,35 +1,32 @@
-#ifndef AUDIODATA_USB_H
-#define AUDIODATA_USB_H
+#pragma once
 
-#include "stdint.h"
-#include "stddef.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
 #include "freertos/ringbuf.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#include "tusb_config.h"
 #include "usb_device_uac.h"
-#include "esp_tinyusb.h"
-#include "freertos/ringbuf.h"
-#include "audio/microphone.h"
-#include "audio/speaker.h"
+#include "microphone.h"
+#include "speaker.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+// Ring buffer handles shared with audiodata_usb.cpp
 extern RingbufHandle_t buf_handle_microfon;
 extern RingbufHandle_t buf_handle_audio;
 extern uint8_t *rb_data;
 extern size_t rb_size;
 
+// Initialize TinyUSB + UAC device
 esp_err_t my_uac_device_init(void);
+
+// Tasks for audio streaming
 void microphone_task(void *arg);
 void speaker_task(void *arg);
-esp_err_t uac_device_input_cb(uint8_t* data, size_t len);
-esp_err_t uac_device_output_cb(uint8_t* data, size_t len);
 void usb_task(void *arg);
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif // AUDIODATA_USB_H
+// Callbacks used by UAC stack
+static esp_err_t uac_device_input_cb(uint8_t* data, size_t len, void *arg);
+static esp_err_t uac_device_output_cb(uint8_t* data, size_t len, size_t *bytes_read, void *arg);
+static void uac_device_set_mute_cb(uint32_t mute, void *arg);
+static void uac_device_set_volume_cb(uint32_t volume, void *arg);

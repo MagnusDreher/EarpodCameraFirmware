@@ -1,5 +1,7 @@
 idf_component_register(
-    SRCS "main.cpp"
+    SRCS  "main.cpp"
     INCLUDE_DIRS "."
-    REQUIRES audioa camera usb_communication driver
+    REQUIRES audioa camera usb_communication
 )
+
+

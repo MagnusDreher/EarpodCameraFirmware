@@ -1,0 +1,9 @@
+dependencies:
+  esp32_s3_eye:
+    version: ^2.0.2
+  esp_lvgl_port:
+    require: public
+    version: ^1
+targets:
+- esp32s3
+version: 0.0.1

@@ -4,18 +4,59 @@ static const char* TAG = "USB_Audio";
 static RingbufHandle_t buf_handle_microfon = NULL;
 static RingbufHandle_t buf_handle_audio = NULL;
 
-   
+static esp_err_t uac_device_input_cb(uint8_t *buf, size_t len, size_t *bytes_read, void *arg) 
+{
+    uint8_t *rb_data;
+    size_t rb_size;
+    rb_data = (uint8_t *) xRingbufferReceiveUpTo(
+        buf_handle_microfon,
+        &rb_size,
+        0,      
+        len
+    );
+
+    if (!rb_data) {
+        memset(buf, 0, len); 
+         *bytes_read = len;  // Silence
+        return ESP_OK;
+    }
+
+    memcpy(buf, rb_data, rb_size);
+
+    *bytes_read = rb_size;
+
+    if (rb_size < len) {
+        memset(buf + rb_size, 0, len - rb_size);
+    }
+
+    vRingbufferReturnItem(buf_handle_microfon, rb_data);
+    return ESP_OK;
+}
+
+static esp_err_t uac_device_output_cb(uint8_t *buf, size_t len, void *arg) 
+{
+
+    BaseType_t res = xRingbufferSend(
+        buf_handle_audio,
+        buf,
+        len,
+        0       
+    );
+
+    if (res != pdTRUE) {
+        // Audio-Drop ist besser als USB-Stall
+        ESP_LOGW(TAG, "Audio ringbuffer full, dropping %d bytes", len);
+    }
+
+    return ESP_OK;
+}
+ 
 esp_err_t my_uac_device_init()
 {
-    //Initialiazing tiny usb
+    /*//Initialiazing tiny usb
     tinyusb_config_t tusb_cfg = {
-        .device_descriptor = NULL,  // TinyUSB verwendet default
-        .string_descriptor = NULL,
-        .string_descriptor_count = 0,
-        .external_phy = false,
-        .configuration_descriptor = NULL,
     };
-
+    tinyusb_driver_install(&tusb_cfg);*/
     //create ring buffer for audio data
     buf_handle_microfon = xRingbufferCreate(8192, RINGBUF_TYPE_BYTEBUF);
     if (buf_handle_microfon == NULL) {
@@ -27,11 +68,7 @@ esp_err_t my_uac_device_init()
         printf("Failed to create ring buffer\n");
     }
 
-    esp_err_t err = esp_tinyusb_init(&tusb_cfg);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize TinyUSB: %s", esp_err_to_name(err));
-        return err;
-    }
+    
     
     ESP_LOGI(TAG, "TinyUSB initialized successfully");
     //Initialiazing UAC device
@@ -43,7 +80,7 @@ esp_err_t my_uac_device_init()
         .cb_ctx = NULL,
     };
     
-    err = uac_device_init(&config);
+    esp_err_t err = uac_device_init(&config);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to init UAC device: 0x%x", err);
         return err;
@@ -96,7 +133,7 @@ void speaker_task(void *arg)
             continue;
         }
 
-        esp_err_t err = sendAudioToAmplifier(
+        esp_err_t err = sendAudiotoAmpflifeier(
             rb_data,
             rb_size,
             &bytes_sent,
@@ -111,55 +148,12 @@ void speaker_task(void *arg)
     }
 }
 
-esp_err_t uac_device_input_cb(uint8_t* data, size_t len) 
-{
-    uint8_t *rb_data;
-    size_t rb_size;
-    rb_data = (uint8_t *) xRingbufferReceiveUpTo(
-        buf_handle_microfon,
-        &rb_size,
-        0,      
-        len
-    );
 
-    if (!rb_data) {
-        memset(data, 0, len);   // Silence
-        return ESP_OK;
-    }
-
-    memcpy(data, rb_data, rb_size);
-
-    if (rb_size < len) {
-        memset(data + rb_size, 0, len - rb_size);
-    }
-
-    vRingbufferReturnItem(buf_handle_microfon, rb_data);
-    return ESP_OK;
-}
-
-esp_err_t uac_device_output_cb(uint8_t* data, size_t len) 
-{
-
-    BaseType_t res = xRingbufferSend(
-        buf_handle_audio,
-        data,
-        len,
-        0       
-    );
-
-    if (res != pdTRUE) {
-        // Audio-Drop ist besser als USB-Stall
-        ESP_LOGW(TAG, "Audio ringbuffer full, dropping %d bytes", len);
-    }
-
-    return ESP_OK;
-}
-
-void usb_task(void *arg)
+/*void usb_task(void *arg)
 {
     while (1) {
         tud_task();   // TinyUSB Scheduler
-        vTaskDelay(1);
+        vTaskDelay(pdMS_TO_TICKS(1));
     }
-}
+}*/
 

@@ -30,11 +30,13 @@ esp_err_t camera_init(){
     .jpeg_quality = 12, //0-63, for OV series camera sensors, lower number means higher quality
     .fb_count = 1, //When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY//CAMERA_GRAB_LATEST. Sets when buffers should be filled
-};
-    //power up the camera if PWDN pin is defined
-    if(CAM_PIN_PWDN != -1){
-        pinMode(CAM_PIN_PWDN, OUTPUT);
-        digitalWrite(CAM_PIN_PWDN, LOW);
+    };
+
+    if (CAM_PIN_PWDN != -1) {
+    
+    gpio_reset_pin((gpio_num_t)CAM_PIN_PWDN);
+    gpio_set_direction((gpio_num_t)CAM_PIN_PWDN, GPIO_MODE_OUTPUT);
+    gpio_set_level((gpio_num_t)CAM_PIN_PWDN, 0);
     }
 
     //initialize the camera
@@ -47,7 +49,7 @@ esp_err_t camera_init(){
     return ESP_OK;
 }
 
-esp_err_t livestream_ov2640(){
+esp_err_t livestream_ov2640(bool camera_on){
 
     camera_fb_t * fb = esp_camera_fb_get();
     if (!fb) {
