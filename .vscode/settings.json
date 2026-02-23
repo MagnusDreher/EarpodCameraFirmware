@@ -16,5 +16,6 @@
   "idf.espIdfPathWin": "d:\\SideHustleProject\\tools\\v5.4.3\\esp-idf",
   "idf.toolsPathWin": "C:\\Users\\dmagn\\.espressif",
   "idf.pythonInstallPath": "C:\\Users\\dmagn\\.espressif\\tools\\idf-python\\3.11.2\\python.exe",
-  "idf.flashType": "JTAG"
+  "idf.flashType": "JTAG",
+  "idf.currentSetup": "d:\\SideHustleProject\\tools\\v5.4.3\\esp-idf"
 }

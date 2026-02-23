@@ -1,7 +1,6 @@
 #include "videodata_usb.h"
 
 
-RingbufHandle_t buf_handle_camera;
 static TaskHandle_t camera_task_handle = NULL;
 
 static esp_err_t camera_init(uvc_format_t format, int width, int height, int rate)

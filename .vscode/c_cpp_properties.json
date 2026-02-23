@@ -8,33 +8,32 @@
             ],
             "includePath": [
                 "${config:idf.espIdfPathWin}/components/**",
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/managed_components/**",  // Für add-dependency Components wie esp_tinyusb
+                "${config:idf.buildPath}/config"  // Für sdkconfig.h (generierte Defines)
+            ],
+            "defines": [
+                "ESP_PLATFORM",
+                "IDF_VER=\"v5.0.0\"",  // Passe an deine IDF-Version an (check mit idf.py --version)
+                "CFG_TUD_ENABLED=1",
+                "CFG_TUD_AUDIO=1",
+                "CFG_TUD_VIDEO=1",
+                "CFG_TUD_AUDIO_IN_PATH=1",
+                "CFG_TUD_AUDIO_OUT_PATH=1",
+                "TUD_OPT_HIGH_SPEED=1",  // Optional, für HS-USB, falls aktiviert
+                "TUD_CONFIG_DESCRIPTOR=1"  // Hilft bei Descriptor-Makros
             ],
             "browse": {
                 "path": [
                     "${config:idf.espIdfPathWin}/components",
-                    "${workspaceFolder}"
+                    "${workspaceFolder}",
+                    "${workspaceFolder}/managed_components"
                 ],
                 "limitSymbolsToIncludedHeaders": true
-            }
-        },
-        {
-            "name": "ESP-IDF (Windows)",
-            "compilerPath": "${config:idf.toolsPathWin}\\tools\\xtensa-esp-elf\\esp-14.2.0_20250730\\xtensa-esp-elf\\bin\\xtensa-esp32s3-elf-gcc.exe",
-            "compileCommands": [
-                "${config:idf.buildPath}/compile_commands.json"
-            ],
-            "includePath": [
-                "${config:idf.espIdfPathWin}/components/**",
-                "${workspaceFolder}/**"
-            ],
-            "browse": {
-                "path": [
-                    "${config:idf.espIdfPathWin}/components",
-                    "${workspaceFolder}"
-                ],
-                "limitSymbolsToIncludedHeaders": true
-            }
+            },
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4

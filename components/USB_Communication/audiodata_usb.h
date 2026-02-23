@@ -11,6 +11,8 @@
 #include "microphone.h"
 #include "speaker.h"
 
+static const char* TAG = "USB_Audio"; // Already declared with static, should be fine in .cpp
+
 // Ring buffer handles shared with audiodata_usb.cpp
 extern RingbufHandle_t buf_handle_microfon;
 extern RingbufHandle_t buf_handle_audio;

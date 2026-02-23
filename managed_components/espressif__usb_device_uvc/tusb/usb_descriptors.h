@@ -44,7 +44,7 @@ enum {
     ITF_NUM_VIDEO_STREAMING_2,
 #endif
 #endif
-    ITF_NUM_TOTAL
+    UVC_ITF_NUM_TOTAL
 };
 
 #if (CFG_TUD_VIDEO)

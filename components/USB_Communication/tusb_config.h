@@ -3,6 +3,7 @@
 //--------------------------------------------------------------------+
 //  MCU & USB Mode
 //--------------------------------------------------------------------+
+#define CFG_TUD_ENABLED 1     // Enable device mode
 
 #define CFG_TUSB_MCU           OPT_MCU_ESP32S3
 #define CFG_TUSB_RHPORT0_MODE  OPT_MODE_DEVICE
@@ -35,7 +36,8 @@
 // One Audio Function with:
 // - 1 channel Microphone (IN)
 // - 1 channel Speaker (OUT)
-
+#define CFG_TUD_AUDIO_IN_PATH       1 // Mikrofon aktivieren
+#define CFG_TUD_AUDIO_OUT_PATH      1 // Speaker aktivieren
 #define CFG_TUD_AUDIO_FUNC_1_DESC_LEN              TUD_AUDIO_DESC_LEN
 
 #define CFG_TUD_AUDIO_FUNC_1_N_AS_INT              2

@@ -70,7 +70,7 @@ uint8_t const *tud_descriptor_device_cb(void)
 
 uint8_t const desc_configuration[] = {
     // Config number, interface count, string index, total length, attribute, power in mA
-    TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0x00, 100),
+    TUD_CONFIG_DESCRIPTOR(1, UAC_ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0x00, 100),
     // Interface number, string index, EP Out & EP In address, EP size
     TUD_AUDIO_DESCRIPTOR(ITF_NUM_AUDIO_CONTROL, 4, EPNUM_AUDIO_OUT, EPNUM_AUDIO_IN, EPNUM_AUDIO_FB),
 };

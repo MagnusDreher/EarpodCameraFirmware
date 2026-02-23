@@ -1,8 +1,6 @@
 #include "audiodata_usb.h"
 
-static const char* TAG = "USB_Audio";
-static RingbufHandle_t buf_handle_microfon = NULL;
-static RingbufHandle_t buf_handle_audio = NULL;
+
 
 static esp_err_t uac_device_input_cb(uint8_t *buf, size_t len, size_t *bytes_read, void *arg) 
 {
