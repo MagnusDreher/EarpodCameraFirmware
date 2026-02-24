@@ -1,8 +1,3 @@
-// usb_descriptor.cpp
-// This file defines the USB descriptors for a composite device supporting UAC (Audio) for microphone and speaker,
-// and UVC (Video) for camera. It uses TinyUSB macros for descriptor generation.
-// Adjust parameters like resolutions, formats, and audio rates based on your hardware.
-
 // Includes
 #include "tusb.h"
 #include "device/usbd.h"         // General device descriptors (e.g., TUD_CONFIG_DESCRIPTOR, TUD_*_IAD)
