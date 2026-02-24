@@ -33,9 +33,6 @@
 #define VIDEO_FPS 30
 #define VIDEO_MAX_FRAME_SIZE (VIDEO_WIDTH * VIDEO_HEIGHT * 2)  // Rough estimate for uncompressed; adjust for JPEG
 
-// Calculate total config length (sum of all descriptor lengths)
-#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_AUDIO_HEADSET_STEREO_DESC_LEN + TUD_VIDEO_DESC_LEN)  // Placeholder; compute exactly below
-
 // Device Descriptor
 const tusb_desc_device_t desc_device = {
     .bLength = sizeof(tusb_desc_device_t),
@@ -69,7 +66,7 @@ const char *string_descriptor[] = {
 uint8_t desc_configuration[] = {
     // Configuration Descriptor
 
-    TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, TUSB_DESC_CONFIG_ATT_SELF_POWERED | TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 500),  // 500mA max power
+    TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, sizeof(desc_configuration), TUSB_DESC_CONFIG_ATT_SELF_POWERED | TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 500),  // 500mA max power
 
     // IAD for UAC (associates 3 interfaces: control, speaker streaming, mic streaming)
     TUD_AUDIO_DESC_IAD(ITF_NUM_AUDIO_CONTROL, 3, 0x00),
@@ -130,4 +127,4 @@ uint16_t get_config_total_len() {
     // In practice, compute sum of lengths from macros or sizeof(desc_configuration) after definition
     return sizeof(desc_configuration);
 }
-
+#define CONFIG_TOTAL_LEN sizeof(desc_configuration)

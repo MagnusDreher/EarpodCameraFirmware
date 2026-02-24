@@ -154,7 +154,7 @@ esp_err_t my_uvc_device_init(){
 
     //Initialiazing UVC device
   uvc_device_config_t config = {
-    .uvc_buffer = NULL,
+    .uvc_buffer = uvc_buffer,
     .uvc_buffer_size = 40 * 1024,
     .start_cb = camera_start_cb,
     .fb_get_cb = camera_fb_get_cb,
