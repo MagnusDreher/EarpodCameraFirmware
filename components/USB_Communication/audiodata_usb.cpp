@@ -63,8 +63,8 @@ esp_err_t my_uac_device_init(void)
         .set_mute_cb    = uac_device_set_mute_cb,
         .set_volume_cb  = uac_device_set_volume_cb,
         .cb_ctx         = NULL,
-        //.spk_itf_num    = ITF_NUM_AUDIO_STREAMING_SPK,
-        //.mic_itf_num    = ITF_NUM_AUDIO_STREAMING_MIC,
+        .spk_itf_num    = ITF_NUM_AUDIO_STREAMING_SPK,
+        .mic_itf_num    = ITF_NUM_AUDIO_STREAMING_MIC,
     };
 
     esp_err_t err = uac_device_init(&config);

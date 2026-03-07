@@ -67,3 +67,4 @@ uint16_t get_config_total_len() {
     return sizeof(s_device_descriptor);
 }
 #define CONFIG_TOTAL_LEN sizeof(desc_configuration)
+

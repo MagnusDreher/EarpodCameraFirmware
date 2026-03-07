@@ -39,15 +39,15 @@
 #define CFG_TUD_AUDIO_FUNC_1_N_AS_INT              2
 #define CFG_TUD_AUDIO_FUNC_1_CTRL_BUF_SZ           64
 
-#define CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX         1    // Microphone (device->host)
-#define CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_RX         1    // Speaker   (host->device)
+#define CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX         1    // Microphone (device->host), 1ch mono
+#define CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_RX         2    // Speaker   (host->device), 2ch stereo (CONFIG_UAC_SPEAKER_CHANNEL_NUM=2)
 
 #define CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE           48000
 
 // Speaker OUT (host -> device, "RX")
 #define CFG_TUD_AUDIO_FUNC_1_FORMAT_1_N_BYTES_PER_SAMPLE_RX    2
 #define CFG_TUD_AUDIO_FUNC_1_FORMAT_1_RESOLUTION_RX             16
-#define CFG_TUD_AUDIO_FUNC_1_FORMAT_1_EP_SZ_OUT                 100
+#define CFG_TUD_AUDIO_FUNC_1_FORMAT_1_EP_SZ_OUT                 196  // 48000/1000 * 2ch * 2bytes + 4 = 196
 
 // Microphone IN (device -> host, "TX")
 #define CFG_TUD_AUDIO_FUNC_1_FORMAT_1_N_BYTES_PER_SAMPLE_TX    2
@@ -58,15 +58,16 @@
 #define CFG_TUD_AUDIO_FUNC_1_BYTES_PER_SAMPLE_TX   CFG_TUD_AUDIO_FUNC_1_FORMAT_1_N_BYTES_PER_SAMPLE_TX
 #define CFG_TUD_AUDIO_FUNC_1_BYTES_PER_SAMPLE_RX   CFG_TUD_AUDIO_FUNC_1_FORMAT_1_N_BYTES_PER_SAMPLE_RX
 
-#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN  232
-// Es kommt automatisch aus managed_components/espressif__usb_device_uac/include/uac_descriptors.h
-// (via CMakeLists.txt target_include_directories BEFORE).
+#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN  241
+// Berechnung fuer SPEAK=2, MIC=1:
+// IAD(8)+STD_AC(9)+CS_AC(9)+CS_AC_TOTAL(98)+SPK_ALT0(9)+SPK_ALT1(46)+MIC_ALT0(9)+MIC_ALT1(46)+FB_EP(7) = 241
+// audiod_open() gibt (241-8)=233 Bytes zurueck — TinyUSB parser springt korrekt ans Ende des Audio-Abschnitts.
 
 //====================================================================
 //  UVC Configuration (usb_device_uvc v1.1.3)
 //====================================================================
 #define CFG_TUD_VIDEO_STREAMING                    1
-#define CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE         2048
+#define CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE         256   // Must be <=1023 for USB Full Speed ISO!
 #define CFG_TUD_CAM1_VIDEO_STREAMING_EP_BUFSIZE    CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE
 
 // Anzahl der Kameras
@@ -79,8 +80,8 @@
 #define UVC_CAM2_FRAME_RATE  0
 
 #define CFG_TUD_AUDIO_FUNC_1_N_FORMATS             1   // war komplett fehlend
-#define CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX         100 // aktiviert tud_audio_read
-#define CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX          100 // aktiviert tud_audio_write
-#define CFG_TUD_AUDIO_FUNC_1_EP_OUT_SW_BUF_SZ      400 // aktiviert tud_audio_available
-#define CFG_TUD_AUDIO_FUNC_1_EP_IN_SW_BUF_SZ       400 // aktiviert tud_audio_get_ep_in_ff
+#define CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX         196  // muss >= EP_SZ_OUT (196 fuer 2ch speaker)
+#define CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX          100  // 1ch mic: 48000/1000 * 1 * 2 = 96 + puffer
+#define CFG_TUD_AUDIO_FUNC_1_EP_OUT_SW_BUF_SZ      2156 // 196 * (SPK_INTERVAL_MS+1) = 196*11
+#define CFG_TUD_AUDIO_FUNC_1_EP_IN_SW_BUF_SZ       1100 // 100 * (MIC_INTERVAL_MS+1) = 100*11
 
