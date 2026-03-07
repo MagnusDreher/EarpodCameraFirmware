@@ -11,7 +11,6 @@
 
 
 
-
 // Initialize TinyUSB + UVC device
 esp_err_t my_uvc_device_init(void);
 

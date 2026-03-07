@@ -2,6 +2,7 @@
 #include "usb_descriptors.h"
 #include <math.h>
 
+extern void nvs_log_save(void);
 static const char* TAG = "USB_Audio";
 
 static bool     s_is_muted     = false;
@@ -70,8 +71,10 @@ esp_err_t my_uac_device_init(void)
     esp_err_t err = uac_device_init(&config);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to init UAC device: 0x%x", err);
+        nvs_log_save();
         return err;
     }
+    nvs_log_save();
     ESP_LOGI(TAG, "UAC Device initialized");
     return ESP_OK;
 }

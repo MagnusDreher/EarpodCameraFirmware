@@ -1,5 +1,8 @@
 #include "videodata_usb.h"
 
+// Expose NVS log save from main.cpp so camera events are captured
+extern void nvs_log_save(void);
+
 static const char *TAG = "USB_Video";
 
 static TaskHandle_t camera_task_handle = NULL;
@@ -261,8 +264,11 @@ void camera_task(void *arg)
 
             if (ret != ESP_OK) {
                 ESP_LOGE(TAG, "Camera init failed: 0x%x", ret);
+                nvs_log_save(); // persist failure for next-boot inspection
                 continue;
             }
+            ESP_LOGI(TAG, "Camera init OK");
+            nvs_log_save(); // persist success + camera_start params for next-boot inspection
 
             // Warmup: discard frames while auto-exposure stabilizes
             for (int i = 0; i < 5; i++) {

@@ -57,7 +57,7 @@ static void nvs_log_read_prev(void)
     nvs_close(h);
 }
 
-static void nvs_log_save(void)
+void nvs_log_save(void)
 {
     if (s_log_len == 0) return;
     nvs_handle_t h;
@@ -123,7 +123,7 @@ extern "C" void app_main(void)
     gpio_set_direction((gpio_num_t)CAM_PIN_PWDN, GPIO_MODE_OUTPUT);
     gpio_set_level((gpio_num_t)CAM_PIN_PWDN, 1);
 
-    
+
     nvs_flash_init();
 
     nvs_log_read_prev();
@@ -133,8 +133,7 @@ extern "C" void app_main(void)
 
     ESP_LOGI(TAG, "Starting Earpod Camera Firmware...");
 
-    
-    ESP_LOGI(TAG, "Camera initialized successfully");
+     vTaskDelay(pdMS_TO_TICKS(5000));
 
     // Initialize audio input (microphone)
     ESP_LOGI(TAG, "Initializing microphone...");
@@ -153,7 +152,7 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "Speaker initialized successfully");
 
 
-    vTaskDelay(pdMS_TO_TICKS(5000));
+   
     
     // UVC zuerst (installiert TinyUSB), dann UAC (registriert sich dazu)
     ESP_LOGI(TAG, "Initializing USB UVC device...");
