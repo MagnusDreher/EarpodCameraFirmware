@@ -1,6 +1,17 @@
 #include "audiodata_usb.h"
 
 
+static const char* TAG = "USB_Audio"; 
+
+static void uac_device_set_mute_cb(uint32_t mute, void *arg)
+{
+    ESP_LOGI(TAG, "Mute: %lu", mute);
+}
+
+static void uac_device_set_volume_cb(uint32_t volume, void *arg)
+{
+    ESP_LOGI(TAG, "Volume: %lu", volume);
+}
 
 static esp_err_t uac_device_input_cb(uint8_t *buf, size_t len, size_t *bytes_read, void *arg) 
 {
@@ -51,11 +62,7 @@ static esp_err_t uac_device_output_cb(uint8_t *buf, size_t len, void *arg)
  
 esp_err_t my_uac_device_init()
 {
-    /*//Initialiazing tiny usb
-    tinyusb_config_t tusb_cfg = {
-    };
-    tinyusb_driver_install(&tusb_cfg);*/
-    //create ring buffer for audio data
+
     buf_handle_microfon = xRingbufferCreate(8192, RINGBUF_TYPE_BYTEBUF);
     if (buf_handle_microfon == NULL) {
         printf("Failed to create ring buffer\n");
@@ -147,11 +154,4 @@ void speaker_task(void *arg)
 }
 
 
-/*void usb_task(void *arg)
-{
-    while (1) {
-        tud_task();   // TinyUSB Scheduler
-        vTaskDelay(pdMS_TO_TICKS(1));
-    }
-}*/
 

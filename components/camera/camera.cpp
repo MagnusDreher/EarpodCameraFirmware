@@ -1,5 +1,6 @@
 #include "camera.h"
 
+static const char* TAG = "Camera";
 esp_err_t camera_init(){
     static camera_config_t camera_config = {
     .pin_pwdn  = CAM_PIN_PWDN,

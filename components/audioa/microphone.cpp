@@ -1,6 +1,6 @@
 #include "microphone.h"
 
-
+static const char* TAG = "MICROPHONE";
 
 esp_err_t ics43434_init(){
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_AUTO,I2S_ROLE_MASTER);

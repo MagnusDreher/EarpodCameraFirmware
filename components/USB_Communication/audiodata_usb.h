@@ -11,7 +11,7 @@
 #include "microphone.h"
 #include "speaker.h"
 
-static const char* TAG = "USB_Audio"; // Already declared with static, should be fine in .cpp
+
 
 // Ring buffer handles shared with audiodata_usb.cpp
 extern RingbufHandle_t buf_handle_microfon;
@@ -24,10 +24,3 @@ esp_err_t my_uac_device_init(void);
 // Tasks for audio streaming
 void microphone_task(void *arg);
 void speaker_task(void *arg);
-void usb_task(void *arg);
-
-// Callbacks used by UAC stack
-static esp_err_t uac_device_input_cb(uint8_t* buf, size_t len, void *arg);
-static esp_err_t uac_device_output_cb(uint8_t* buf, size_t len, size_t *bytes_read, void *arg);
-static void uac_device_set_mute_cb(uint32_t mute, void *arg);
-static void uac_device_set_volume_cb(uint32_t volume, void *arg);

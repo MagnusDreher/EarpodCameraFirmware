@@ -5,7 +5,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-static const char* TAG = "MICROPHONE";
+
 
 static i2s_chan_handle_t rx_handle = NULL;
 

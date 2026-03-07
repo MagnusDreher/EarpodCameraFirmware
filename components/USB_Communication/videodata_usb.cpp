@@ -1,5 +1,10 @@
 #include "videodata_usb.h"
 
+const uvc_frame_info_t UVC_FRAMES_INFO[UVC_CAM_NUM][UVC_FRAME_NUM] = {{
+    {640, 480, 30, 640 * 480 * 2 * 30}
+}};
+
+static const char *TAG = "USB_Video";
 
 static TaskHandle_t camera_task_handle = NULL;
 
@@ -226,6 +231,6 @@ void camera_task(void *arg)
             esp_camera_fb_return(fb); // Return immediately if can't send
         }
 
-        vTaskDelay(pdMS_TO_TICKS(10)); // ~100fps Limit
+        vTaskDelay(pdMS_TO_TICKS(30)); // ~100fps Limit
     }
 }

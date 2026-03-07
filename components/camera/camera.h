@@ -23,7 +23,6 @@
 #define CAM_PIN_HREF    13
 #define CAM_PIN_PCLK    8
 
-static const char* TAG = "Camera";
 esp_err_t camera_init();
 
 esp_err_t livestream_ov2640(bool camera_on);
