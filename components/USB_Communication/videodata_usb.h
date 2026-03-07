@@ -10,11 +10,7 @@
 #include "freertos/ringbuf.h"
 
 
-extern RingbufHandle_t buf_handle_camera;
 
-
-
-// Ring buffer handle shared with videodata_usb.cpp
 
 // Initialize TinyUSB + UVC device
 esp_err_t my_uvc_device_init(void);

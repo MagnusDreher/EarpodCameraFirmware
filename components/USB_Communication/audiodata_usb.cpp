@@ -1,157 +1,77 @@
 #include "audiodata_usb.h"
+#include "usb_descriptors.h"
+#include <math.h>
 
+static const char* TAG = "USB_Audio";
 
-static const char* TAG = "USB_Audio"; 
+static bool     s_is_muted     = false;
+static uint32_t s_volume_factor = 100; // percentage (100 = unity gain)
 
 static void uac_device_set_mute_cb(uint32_t mute, void *arg)
 {
+    s_is_muted = (mute != 0);
     ESP_LOGI(TAG, "Mute: %lu", mute);
 }
 
-static void uac_device_set_volume_cb(uint32_t volume, void *arg)
+static void uac_device_set_volume_cb(uint32_t _volume, void *arg)
 {
-    ESP_LOGI(TAG, "Volume: %lu", volume);
+    // _volume = (volume_db + 50) * 2  (see usb_device_uac.c)
+    int volume_db = (int)(_volume / 2) - 50;
+    s_volume_factor = (uint32_t)(powf(10.0f, volume_db / 20.0f) * 100.0f);
+    ESP_LOGI(TAG, "Volume: %lu dB=%d factor=%lu", _volume, volume_db, s_volume_factor);
 }
 
-static esp_err_t uac_device_input_cb(uint8_t *buf, size_t len, size_t *bytes_read, void *arg) 
+// Called by UAC component when host wants microphone audio
+static esp_err_t uac_device_input_cb(uint8_t *buf, size_t len, size_t *bytes_read, void *arg)
 {
-    uint8_t *rb_data;
-    size_t rb_size;
-    rb_data = (uint8_t *) xRingbufferReceiveUpTo(
-        buf_handle_microfon,
-        &rb_size,
-        0,      
-        len
-    );
+    return readMicrophone(buf, len, bytes_read, portMAX_DELAY);
+}
 
-    if (!rb_data) {
-        memset(buf, 0, len); 
-         *bytes_read = len;  // Silence
-        return ESP_OK;
+// Called by UAC component when host sends speaker audio
+static esp_err_t uac_device_output_cb(uint8_t *buf, size_t len, void *arg)
+{
+    int16_t *samples = (int16_t *)buf;
+    size_t sample_count = len / 2;
+
+    if (s_is_muted) {
+        memset(buf, 0, len);
+    } else if (s_volume_factor != 100) {
+        for (size_t i = 0; i < sample_count; i++) {
+            int32_t s = (int32_t)samples[i] * (int32_t)s_volume_factor / 100;
+            if (s >  32767) s =  32767;
+            if (s < -32768) s = -32768;
+            samples[i] = (int16_t)s;
+        }
     }
 
-    memcpy(buf, rb_data, rb_size);
-
-    *bytes_read = rb_size;
-
-    if (rb_size < len) {
-        memset(buf + rb_size, 0, len - rb_size);
+    size_t total = 0;
+    while (total < len) {
+        size_t written = 0;
+        esp_err_t err = sendAudiotoAmpflifeier((uint8_t*)buf + total, len - total, &written, portMAX_DELAY);
+        if (err != ESP_OK) return err;
+        total += written;
     }
-
-    vRingbufferReturnItem(buf_handle_microfon, rb_data);
     return ESP_OK;
 }
 
-static esp_err_t uac_device_output_cb(uint8_t *buf, size_t len, void *arg) 
+esp_err_t my_uac_device_init(void)
 {
-
-    BaseType_t res = xRingbufferSend(
-        buf_handle_audio,
-        buf,
-        len,
-        0       
-    );
-
-    if (res != pdTRUE) {
-        // Audio-Drop ist besser als USB-Stall
-        ESP_LOGW(TAG, "Audio ringbuffer full, dropping %d bytes", len);
-    }
-
-    return ESP_OK;
-}
- 
-esp_err_t my_uac_device_init()
-{
-
-    buf_handle_microfon = xRingbufferCreate(8192, RINGBUF_TYPE_BYTEBUF);
-    if (buf_handle_microfon == NULL) {
-        printf("Failed to create ring buffer\n");
-    }
-    //create ring buffer for audio data
-    buf_handle_audio = xRingbufferCreate(8192, RINGBUF_TYPE_BYTEBUF);
-    if (buf_handle_audio == NULL) {
-        printf("Failed to create ring buffer\n");
-    }
-
-    
-    
-    ESP_LOGI(TAG, "TinyUSB initialized successfully");
-    //Initialiazing UAC device
     uac_device_config_t config = {
-        .output_cb = uac_device_output_cb,           // Speaker-Daten vom Host
-        .input_cb = uac_device_input_cb,             // Microphone-Daten zum Host
-        .set_mute_cb = uac_device_set_mute_cb,       // Mute-Control
-        .set_volume_cb = uac_device_set_volume_cb,   // Volume-Control
-        .cb_ctx = NULL,
+        .skip_tinyusb_init = true,
+        .output_cb      = uac_device_output_cb,
+        .input_cb       = uac_device_input_cb,
+        .set_mute_cb    = uac_device_set_mute_cb,
+        .set_volume_cb  = uac_device_set_volume_cb,
+        .cb_ctx         = NULL,
+        //.spk_itf_num    = ITF_NUM_AUDIO_STREAMING_SPK,
+        //.mic_itf_num    = ITF_NUM_AUDIO_STREAMING_MIC,
     };
-    
+
     esp_err_t err = uac_device_init(&config);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to init UAC device: 0x%x", err);
         return err;
     }
     ESP_LOGI(TAG, "UAC Device initialized");
-
     return ESP_OK;
 }
-
-void microphone_task(void *arg)
-{
-    uint8_t i2s_buf[512];
-    size_t bytes_read;
-
-    while (1) {
-        esp_err_t err = readMicrophone(
-            i2s_buf,
-            sizeof(i2s_buf),
-            &bytes_read,
-            portMAX_DELAY
-        );
-
-        if (err == ESP_OK && bytes_read > 0) {
-            if (xRingbufferSend(
-                    buf_handle_microfon,
-                    i2s_buf,
-                    bytes_read,
-                    portMAX_DELAY
-                ) != pdTRUE) {
-                ESP_LOGW(TAG, "Ringbuffer full, dropping audio");
-            }
-        }
-    }
-}
-void speaker_task(void *arg)
-{
-    uint8_t *rb_data;
-    size_t rb_size;
-    size_t bytes_sent;
-
-    while (1) {
-        rb_data = (uint8_t *) xRingbufferReceiveUpTo(
-            buf_handle_audio,
-            &rb_size,
-            portMAX_DELAY,   
-            512              
-        );
-
-        if (!rb_data) {
-            continue;
-        }
-
-        esp_err_t err = sendAudiotoAmpflifeier(
-            rb_data,
-            rb_size,
-            &bytes_sent,
-            portMAX_DELAY
-        );
-
-        if (err != ESP_OK || bytes_sent != rb_size) {
-            ESP_LOGW(TAG, "Speaker underrun or error");
-        }
-
-        vRingbufferReturnItem(buf_handle_audio, rb_data);
-    }
-}
-
-
-

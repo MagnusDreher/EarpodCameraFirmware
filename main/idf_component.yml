@@ -5,11 +5,8 @@ dependencies:
   espressif/esp32-camera:
     version: '>=2.0.9'
 
-  espressif/tinyusb:
-    version: '>=0.15.0'
-
   espressif/usb_device_uac:
-    version: '>=1.1.0'
+    version: '>=1.2.2'
 
   espressif/usb_device_uvc:
     version: '>=1.1.3'

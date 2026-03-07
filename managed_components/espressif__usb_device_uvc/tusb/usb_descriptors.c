@@ -25,7 +25,11 @@
  */
 
 #include "tusb.h"
+#include "class/audio/audio.h"
 #include "usb_descriptors.h"
+#if CONFIG_USB_DEVICE_UAC_AS_PART
+#include "uac_descriptors.h"
+#endif
 
 //--------------------------------------------------------------------+
 // Device Descriptors
@@ -144,10 +148,19 @@ uint8_t const *tud_descriptor_device_cb(void)
 #define TUD_CAM2_VIDEO_CAPTURE_DESC_LEN    0
 #endif
 
+#if CONFIG_USB_DEVICE_UAC_AS_PART
+#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CAM1_VIDEO_CAPTURE_DESC_LEN + TUD_CAM2_VIDEO_CAPTURE_DESC_LEN + TUD_AUDIO_DEVICE_DESC_LEN)
+#else
 #define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CAM1_VIDEO_CAPTURE_DESC_LEN + TUD_CAM2_VIDEO_CAPTURE_DESC_LEN)
+#endif
 #define EPNUM_CAM1_VIDEO_IN    0x81
 #if CONFIG_UVC_SUPPORT_TWO_CAM
 #define EPNUM_CAM2_VIDEO_IN    0x82
+#endif
+#if CONFIG_USB_DEVICE_UAC_AS_PART
+#define EPNUM_AUDIO_OUT    0x01
+#define EPNUM_AUDIO_IN     0x82
+#define EPNUM_AUDIO_FB     0x83
 #endif
 
 uint8_t const desc_fs_configuration[] = {
@@ -246,6 +259,10 @@ uint8_t const desc_fs_configuration[] = {
 #endif
 #endif // CONFIG_UVC_CAM2_MULTI_FRAMESIZE
 #endif // CFG_TUD_CAM2_VIDEO_STREAMING_BULK
+#endif
+
+#if CONFIG_USB_DEVICE_UAC_AS_PART
+    TUD_AUDIO_DESCRIPTOR(ITF_NUM_AUDIO_CONTROL, 0, EPNUM_AUDIO_OUT, EPNUM_AUDIO_IN, EPNUM_AUDIO_FB),
 #endif
 
 };

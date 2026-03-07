@@ -5,9 +5,13 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "driver/gpio.h"
 
 
-static i2s_chan_handle_t rx_handle = NULL;
+#define MIC_I2S_CLK  GPIO_NUM_38
+#define MIC_I2S_LR   GPIO_NUM_35
+#define MIC_I2S_DATA GPIO_NUM_45
+
 
 esp_err_t ics43434_init();
 esp_err_t readMicrophone(void* buf,size_t bytes_to_read,size_t* bytes_read,

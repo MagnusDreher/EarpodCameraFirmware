@@ -1,7 +1,7 @@
 #include "camera.h"
 
 static const char* TAG = "Camera";
-esp_err_t camera_init(){
+/*esp_err_t camera_init(){
     static camera_config_t camera_config = {
     .pin_pwdn  = CAM_PIN_PWDN,
     .pin_reset = CAM_PIN_RESET,
@@ -21,7 +21,7 @@ esp_err_t camera_init(){
     .pin_href = CAM_PIN_HREF,
     .pin_pclk = CAM_PIN_PCLK,
 
-    .xclk_freq_hz = 36000000,
+    .xclk_freq_hz = 24000000,
     .ledc_timer = LEDC_TIMER_0,
     .ledc_channel = LEDC_CHANNEL_0,
 
@@ -49,7 +49,7 @@ esp_err_t camera_init(){
 
     return ESP_OK;
 }
-
+*/
 esp_err_t livestream_ov2640(bool camera_on){
 
     camera_fb_t * fb = esp_camera_fb_get();

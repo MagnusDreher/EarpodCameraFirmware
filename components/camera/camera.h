@@ -19,10 +19,12 @@
 #define CAM_PIN_D2      3
 #define CAM_PIN_D1      2
 #define CAM_PIN_D0      4
+/*#define CAM_PIN_D1      0
+#define CAM_PIN_D0      1*/
 #define CAM_PIN_VSYNC   18
 #define CAM_PIN_HREF    13
 #define CAM_PIN_PCLK    8
 
-esp_err_t camera_init();
+//esp_err_t camera_init();
 
 esp_err_t livestream_ov2640(bool camera_on);

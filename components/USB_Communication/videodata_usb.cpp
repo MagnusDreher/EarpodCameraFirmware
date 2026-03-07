@@ -1,13 +1,17 @@
 #include "videodata_usb.h"
 
-const uvc_frame_info_t UVC_FRAMES_INFO[UVC_CAM_NUM][UVC_FRAME_NUM] = {{
-    {640, 480, 30, 640 * 480 * 2 * 30}
-}};
-
 static const char *TAG = "USB_Video";
 
 static TaskHandle_t camera_task_handle = NULL;
+static RingbufHandle_t buf_handle_camera = NULL;
+static volatile bool camera_ready = false;
+static camera_fb_t *last_camera_fb = NULL;
 
+// Semaphore + params for non-blocking camera_start_cb
+static SemaphoreHandle_t s_camera_start_sem = NULL;
+static SemaphoreHandle_t s_camera_stop_sem  = NULL;
+static uvc_format_t s_pending_format;
+static int s_pending_width, s_pending_height, s_pending_rate;
 static esp_err_t camera_init(uvc_format_t format, int width, int height, int rate)
 {
     framesize_t framesize;
@@ -29,7 +33,7 @@ static esp_err_t camera_init(uvc_format_t format, int width, int height, int rat
         return ESP_ERR_NOT_SUPPORTED;
     }
 
-    static camera_config_t camera_config = {
+    camera_config_t camera_config = {
     .pin_pwdn  = CAM_PIN_PWDN,
     .pin_reset = CAM_PIN_RESET,
     .pin_xclk = CAM_PIN_XCLK,
@@ -48,23 +52,23 @@ static esp_err_t camera_init(uvc_format_t format, int width, int height, int rat
     .pin_href = CAM_PIN_HREF,
     .pin_pclk = CAM_PIN_PCLK,
 
-    .xclk_freq_hz = 36000000,
+    .xclk_freq_hz = 20000000, // OV2640 datasheet: typ 24 MHz max — 20 MHz is safe
     .ledc_timer = LEDC_TIMER_0,
     .ledc_channel = LEDC_CHANNEL_0,
 
-    .pixel_format = PIXFORMAT_JPEG,//YUV422,GRAYSCALE,RGB565,JPEG
-    .frame_size = FRAMESIZE_UXGA,//QQVGA-UXGA, For ESP32, do not use sizes above QVGA when not JPEG. The performance of the ESP32-S series has improved a lot, but JPEG mode always gives better frame rates.
+    .pixel_format = PIXFORMAT_JPEG,
+    .frame_size = framesize,
 
-    .jpeg_quality = 12, //0-63, for OV series camera sensors, lower number means higher quality
-    .fb_count = 1, //When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
-    .grab_mode = CAMERA_GRAB_WHEN_EMPTY//CAMERA_GRAB_LATEST. Sets when buffers should be filled
+    .jpeg_quality = 12,
+    .fb_count = 1,
+    .grab_mode = CAMERA_GRAB_WHEN_EMPTY
     };
 
     if (CAM_PIN_PWDN != -1) {
-    
-    gpio_reset_pin((gpio_num_t)CAM_PIN_PWDN);
-    gpio_set_direction((gpio_num_t)CAM_PIN_PWDN, GPIO_MODE_OUTPUT);
-    gpio_set_level((gpio_num_t)CAM_PIN_PWDN, 0);
+        gpio_reset_pin((gpio_num_t)CAM_PIN_PWDN);
+        gpio_set_direction((gpio_num_t)CAM_PIN_PWDN, GPIO_MODE_OUTPUT);
+        gpio_set_level((gpio_num_t)CAM_PIN_PWDN, 0);
+        vTaskDelay(pdMS_TO_TICKS(10)); // wait for sensor to come out of power-down
     }
 
     //initialize the camera
@@ -77,28 +81,48 @@ static esp_err_t camera_init(uvc_format_t format, int width, int height, int rat
     return ESP_OK;
 };
 
+// Called from TinyUSB task — must return immediately to not block USB processing
 static esp_err_t camera_start_cb(uvc_format_t format, int width, int height, int rate, void *ctx)
 {
-     ESP_LOGI(TAG, "Camera Start");
-
-     esp_err_t ret = camera_init(format, width, height, rate);
-     if (ret != ESP_OK) {
-         ESP_LOGE(TAG, "Camera initialization failed in start_cb");
-         return ret;
-     }
+    ESP_LOGI(TAG, "Camera Start: %dx%d@%dfps", width, height, rate);
+    s_pending_format = format;
+    s_pending_width  = width;
+    s_pending_height = height;
+    s_pending_rate   = rate;
+    xSemaphoreGive(s_camera_start_sem);  // signal camera_task to initialize
     return ESP_OK;
 }
 
+// Called from TinyUSB task — signal camera_task and return immediately
 static void camera_stop_cb(void *ctx)
 {
     ESP_LOGI(TAG, "Camera Stop");
+    camera_ready = false;
+    xSemaphoreGive(s_camera_stop_sem);
+}
+
+static void camera_stop_cleanup(void)
+{
+    vTaskDelay(pdMS_TO_TICKS(60)); // let camera_task exit esp_camera_fb_get safely
+
+    // Drain ring buffer — frame pointers become invalid after deinit
+    size_t item_size;
+    void *item;
+    while ((item = xRingbufferReceive(buf_handle_camera, &item_size, 0)) != NULL) {
+        if (item_size == sizeof(camera_fb_t *)) {
+            camera_fb_t *fb = *(camera_fb_t **)item;
+            if (fb) esp_camera_fb_return(fb);
+        }
+        vRingbufferReturnItem(buf_handle_camera, item);
+    }
+    last_camera_fb = NULL;
+
     esp_camera_deinit();
     if (CAM_PIN_PWDN != -1) {
         gpio_set_level((gpio_num_t)CAM_PIN_PWDN, 1);
     }
 }
 
-static camera_fb_t *last_camera_fb = NULL;
 static uvc_fb_t uvc_fb;
 
 static uvc_fb_t* camera_fb_get_cb(void *ctx)
@@ -108,7 +132,6 @@ static uvc_fb_t* camera_fb_get_cb(void *ctx)
     void *item = xRingbufferReceive(buf_handle_camera, &item_size, timeout);
 
     if (!item || item_size != sizeof(camera_fb_t *)) {
-        ESP_LOGE(TAG, "No frame available in ringbuffer");
         if (item) vRingbufferReturnItem(buf_handle_camera, item);
         return NULL;
     }
@@ -140,15 +163,24 @@ static void camera_fb_return_cb(uvc_fb_t *fb, void *ctx)
 }
 
 esp_err_t my_uvc_device_init(){
-  
-    
-    buf_handle_camera = xRingbufferCreate(sizeof(camera_fb_t *)*4, RINGBUF_TYPE_NOSPLIT);
+
+    s_camera_start_sem = xSemaphoreCreateBinary();
+    s_camera_stop_sem  = xSemaphoreCreateBinary();
+    if (!s_camera_start_sem || !s_camera_stop_sem) {
+        ESP_LOGE(TAG, "Failed to create semaphores");
+        return ESP_FAIL;
+    }
+
+    // NOSPLIT ring buffer needs 8-byte header + data per item, aligned to 4 bytes.
+    // Per item: 8 (header) + 4 (pointer) = 12 bytes. For 4 items: 48 bytes minimum.
+    // Use 256 bytes to have a safe margin.
+    buf_handle_camera = xRingbufferCreate(256, RINGBUF_TYPE_NOSPLIT);
     if (buf_handle_camera == NULL) {
         printf("Failed to create ring buffer\n");
         return ESP_FAIL;
     }
 
-    const size_t buff_size = 40 * 1024;
+    const size_t buff_size = 64 * 1024;
     uint8_t *uvc_buffer = (uint8_t *)heap_caps_malloc(buff_size, MALLOC_CAP_DEFAULT);
     if (uvc_buffer == NULL) {
         ESP_LOGE(TAG, "Failed to allocate UVC buffer");
@@ -160,7 +192,7 @@ esp_err_t my_uvc_device_init(){
     //Initialiazing UVC device
   uvc_device_config_t config = {
     .uvc_buffer = uvc_buffer,
-    .uvc_buffer_size = 40 * 1024,
+    .uvc_buffer_size = buff_size,
     .start_cb = camera_start_cb,
     .fb_get_cb = camera_fb_get_cb,
     .fb_return_cb = camera_fb_return_cb,
@@ -215,22 +247,59 @@ esp_err_t err =uvc_device_config(0,&config);
 */
 void camera_task(void *arg)
 {
-
     while (true) {
+        // Check if camera_stop_cb signalled cleanup
+        if (xSemaphoreTake(s_camera_stop_sem, 0) == pdTRUE) {
+            camera_stop_cleanup();
+            continue;
+        }
+
+        // Check if camera_start_cb signalled init
+        if (xSemaphoreTake(s_camera_start_sem, pdMS_TO_TICKS(50)) == pdTRUE) {
+            // Do the slow init + warmup here, NOT in the TinyUSB callback
+            esp_err_t ret = camera_init(s_pending_format, s_pending_width, s_pending_height, s_pending_rate);
+
+            if (ret != ESP_OK) {
+                ESP_LOGE(TAG, "Camera init failed: 0x%x", ret);
+                continue;
+            }
+
+            // Warmup: discard frames while auto-exposure stabilizes
+            for (int i = 0; i < 5; i++) {
+                camera_fb_t *warmup = esp_camera_fb_get();
+                if (warmup) esp_camera_fb_return(warmup);
+                vTaskDelay(pdMS_TO_TICKS(100));
+            }
+
+            // Pre-fill ring buffer so USB video task has a frame ready immediately
+            camera_fb_t *first = esp_camera_fb_get();
+            if (first) {
+                camera_fb_t *fb_ptr = first;
+                if (xRingbufferSend(buf_handle_camera, &fb_ptr, sizeof(camera_fb_t *), pdMS_TO_TICKS(200)) != pdTRUE) {
+                    esp_camera_fb_return(first);
+                }
+            }
+
+            camera_ready = true;
+            continue;
+        }
+
+        if (!camera_ready) {
+            continue;
+        }
+
         camera_fb_t *fb = esp_camera_fb_get();
         if (!fb) {
-            ESP_LOGW(TAG, "Camera capture failed");
             vTaskDelay(pdMS_TO_TICKS(10));
             continue;
         }
 
-        // Frame in Ringbuffer schreiben
         camera_fb_t *fb_ptr = fb;
         if (xRingbufferSend(buf_handle_camera, &fb_ptr, sizeof(camera_fb_t *), pdMS_TO_TICKS(10)) != pdTRUE) {
-            ESP_LOGW(TAG, "Ringbuffer full, dropping video frame");
-            esp_camera_fb_return(fb); // Return immediately if can't send
+            ESP_LOGW(TAG, "Ringbuffer full, dropping frame");
+            esp_camera_fb_return(fb);
         }
 
-        vTaskDelay(pdMS_TO_TICKS(30)); // ~100fps Limit
+        vTaskDelay(pdMS_TO_TICKS(30));
     }
 }
