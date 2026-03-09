@@ -5,6 +5,8 @@ static i2s_chan_handle_t rx_handle = NULL;
 
 esp_err_t ics43434_init(){
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
+    chan_cfg.dma_desc_num  = 8;  
+    chan_cfg.dma_frame_num = 240; 
     esp_err_t err=i2s_new_channel(&chan_cfg, NULL, &rx_handle);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "i2s_new_channel failed: 0x%x", err);
@@ -12,7 +14,8 @@ esp_err_t ics43434_init(){
     }
     i2s_std_config_t std_cfg = {
     .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(CONFIG_UAC_SAMPLE_RATE),
-        .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
+      
+        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_STEREO),
         .gpio_cfg = {
             .mclk = I2S_GPIO_UNUSED,
             .bclk = MIC_I2S_CLK,
@@ -27,10 +30,9 @@ esp_err_t ics43434_init(){
         
     },
     };
-    // ICS-43434 needs 64 BCLKs per frame (32 per slot).
-    // Force 32-bit slot width so BCLK = 32*2*fs = 3.072 MHz,
-    // while still reading only the top 16 bits (the useful audio data).
+
     std_cfg.slot_cfg.slot_bit_width = I2S_SLOT_BIT_WIDTH_32BIT;
+    std_cfg.slot_cfg.ws_width       = 32;
 
     err=i2s_channel_init_std_mode(rx_handle, &std_cfg);
         if (err != ESP_OK) {
@@ -43,6 +45,9 @@ esp_err_t ics43434_init(){
             ESP_LOGE(TAG, "i2s_channel_enable failed: 0x%x", err);
             return err;
         }
+
+    gpio_pulldown_en(MIC_I2S_DATA);
+
     return err;
     }
 

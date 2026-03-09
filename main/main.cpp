@@ -1,7 +1,4 @@
 #include <stdio.h>
-//#include "esp_tinyusb.h"
-#include <string.h>
-#include <stdarg.h>
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -19,54 +16,6 @@
 
 static const char* TAG = "APP_MAIN";
 
-// ---- NVS-Logging -------------------------------------------------------
-#define NVS_LOG_NS  "diag"
-#define NVS_LOG_KEY "boot_log"
-#define LOG_BUF_SZ  3000
-
-static char s_log_buf[LOG_BUF_SZ];
-static int  s_log_len = 0;
-
-static int log_capture_vprintf(const char *fmt, va_list args)
-{
-    int rem = LOG_BUF_SZ - s_log_len - 1;
-    if (rem > 0) {
-        va_list copy;
-        va_copy(copy, args);
-        int n = vsnprintf(s_log_buf + s_log_len, rem, fmt, copy);
-        va_end(copy);
-        if (n > 0) s_log_len += (n < rem ? n : rem - 1);
-    }
-    return vprintf(fmt, args);
-}
-
-static void nvs_log_read_prev(void)
-{
-    nvs_handle_t h;
-    if (nvs_open(NVS_LOG_NS, NVS_READONLY, &h) != ESP_OK) return;
-    size_t len = 0;
-    if (nvs_get_blob(h, NVS_LOG_KEY, NULL, &len) == ESP_OK && len > 0) {
-        char *p = (char*)malloc(len + 1);
-        if (p) {
-            nvs_get_blob(h, NVS_LOG_KEY, p, &len);
-            p[len] = '\0';
-            printf("\n=== LOG LETZTER BOOT ===\n%s=== ENDE LOG ===\n\n", p);
-            free(p);
-        }
-    }
-    nvs_close(h);
-}
-
-void nvs_log_save(void)
-{
-    if (s_log_len == 0) return;
-    nvs_handle_t h;
-    if (nvs_open(NVS_LOG_NS, NVS_READWRITE, &h) != ESP_OK) return;
-    nvs_set_blob(h, NVS_LOG_KEY, s_log_buf, s_log_len);
-    nvs_commit(h);
-    nvs_close(h);
-}
-// ------------------------------------------------------------------------
 #define BOOT_LIMIT 3
 
 void enter_download_mode(void)
@@ -126,9 +75,6 @@ extern "C" void app_main(void)
 
     nvs_flash_init();
 
-    nvs_log_read_prev();
-    esp_log_set_vprintf(log_capture_vprintf);
-
     check_bootloader_fallback_nvs();
 
     ESP_LOGI(TAG, "Starting Earpod Camera Firmware...");
@@ -171,9 +117,9 @@ extern "C" void app_main(void)
 
     // Create task for video streaming from camera to USB
     ESP_LOGI(TAG, "Starting video livestream...");
-    xTaskCreate(camera_task, "livestream_task", 8192, NULL, 5, NULL);     
+    // Camera on Core 1 — keeps camera DMA away from USB/audio tasks on Core 0
+    xTaskCreatePinnedToCore(camera_task, "livestream_task", 8192, NULL, 5, NULL, 1);
 
     ESP_LOGI(TAG, "All components initialized. Earpod Camera is running...");
-    nvs_log_save();
     clear_boot_counter();
 }

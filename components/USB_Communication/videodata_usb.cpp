@@ -1,8 +1,5 @@
 #include "videodata_usb.h"
 
-// Expose NVS log save from main.cpp so camera events are captured
-extern void nvs_log_save(void);
-
 static const char *TAG = "USB_Video";
 
 static TaskHandle_t camera_task_handle = NULL;
@@ -131,7 +128,7 @@ static uvc_fb_t uvc_fb;
 static uvc_fb_t* camera_fb_get_cb(void *ctx)
 {
     size_t item_size;
-    const TickType_t timeout = pdMS_TO_TICKS(100); // Wait up to 100ms for a frame
+    const TickType_t timeout = pdMS_TO_TICKS(100);
     void *item = xRingbufferReceive(buf_handle_camera, &item_size, timeout);
 
     if (!item || item_size != sizeof(camera_fb_t *)) {
@@ -174,9 +171,7 @@ esp_err_t my_uvc_device_init(){
         return ESP_FAIL;
     }
 
-    // NOSPLIT ring buffer needs 8-byte header + data per item, aligned to 4 bytes.
-    // Per item: 8 (header) + 4 (pointer) = 12 bytes. For 4 items: 48 bytes minimum.
-    // Use 256 bytes to have a safe margin.
+   
     buf_handle_camera = xRingbufferCreate(256, RINGBUF_TYPE_NOSPLIT);
     if (buf_handle_camera == NULL) {
         printf("Failed to create ring buffer\n");
@@ -226,28 +221,6 @@ esp_err_t err =uvc_device_config(0,&config);
 }
 
 
-/*esp_err_t uvc_device_output_cb(uint8_t *data, size_t len)
-{
-    uint8_t *rb_data;
-    size_t rb_size;
-
-    rb_data = (uint8_t *) xRingbufferReceiveUpTo(buf_handle_camera, &rb_size, 0, len);
-
-    if(!rb_data) {
-        memset(data, 0, len);
-        return ESP_OK;
-    }
-
-    
-    memcpy(data, rb_data, rb_size);
-
-    if(rb_size < len)
-        memset(data + rb_size, 0, len - rb_size);
-
-    vRingbufferReturnItem(buf_handle_camera, rb_data);
-    return ESP_OK;
-}
-*/
 void camera_task(void *arg)
 {
     while (true) {
@@ -264,11 +237,9 @@ void camera_task(void *arg)
 
             if (ret != ESP_OK) {
                 ESP_LOGE(TAG, "Camera init failed: 0x%x", ret);
-                nvs_log_save(); // persist failure for next-boot inspection
                 continue;
             }
             ESP_LOGI(TAG, "Camera init OK");
-            nvs_log_save(); // persist success + camera_start params for next-boot inspection
 
             // Warmup: discard frames while auto-exposure stabilizes
             for (int i = 0; i < 5; i++) {

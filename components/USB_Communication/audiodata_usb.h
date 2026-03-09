@@ -8,5 +8,6 @@
 #include "usb_device_uac.h"
 #include "microphone.h"
 #include "speaker.h"
+#include "freertos/ringbuf.h"
 
 esp_err_t my_uac_device_init(void);

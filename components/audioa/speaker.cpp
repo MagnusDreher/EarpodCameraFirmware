@@ -6,6 +6,8 @@ static i2s_chan_handle_t tx_handle = NULL;
 
 esp_err_t MAX98357_init(){
      i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_1, I2S_ROLE_MASTER);
+    chan_cfg.dma_desc_num  = 8;   // more descriptors = more DMA headroom
+    chan_cfg.dma_frame_num = 480; // 480 stereo frames = 10ms per descriptor (80ms total)
     esp_err_t err=i2s_new_channel(&chan_cfg, &tx_handle, NULL);
     if (err != ESP_OK) {
             ESP_LOGE(TAG, "i2s_new_channel failed: 0x%x", err);

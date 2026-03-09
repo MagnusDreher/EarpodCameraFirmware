@@ -338,6 +338,10 @@ bool tud_audio_set_itf_cb(uint8_t rhport, tusb_control_request_t const *p_reques
     uint8_t const alt = tu_u16_low(tu_le16toh(p_request->wValue));
 
     TU_LOG2("Set interface %d alt %d\r\n", itf, alt);
+    ESP_LOGI(TAG, "SET_INTERFACE: itf=%d alt=%d spk_itf=%d mic_itf=%d",
+             itf, alt,
+             s_uac_device ? (int)s_uac_device->spk_itf_num : -1,
+             s_uac_device ? (int)s_uac_device->mic_itf_num : -1);
 
 #if CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX
     if (s_uac_device->spk_itf_num == itf && alt != 0) {
@@ -375,6 +379,12 @@ bool tud_audio_rx_done_post_read_cb(uint8_t rhport, uint16_t n_bytes_received, u
 
     static bool new_play = false;
     static int64_t last_time = 0;
+    static bool rx_first_call = true;
+    if (rx_first_call) {
+        rx_first_call = false;
+        ESP_LOGI(TAG, "RX_DONE: first audio data arrived, n_bytes=%u ep_out=0x%02x alt=%u",
+                 n_bytes_received, ep_out, cur_alt_setting);
+    }
     int64_t now = esp_timer_get_time();
 
     /**
