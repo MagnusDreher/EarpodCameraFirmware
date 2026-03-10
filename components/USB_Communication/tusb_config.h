@@ -33,7 +33,10 @@
 //====================================================================
 //  UAC Audio Configuration (usb_device_uac v1.2.2)
 //====================================================================
-#define CFG_TUD_AUDIO_ENABLE_FEEDBACK_EP          1
+#define CFG_TUD_AUDIO_ENABLE_FEEDBACK_EP                    1
+// iOS/macOS require 10.14 feedback format (3 bytes) for FS devices.
+// TinyUSB computes feedback in 16.16 internally and converts to 10.14 before sending.
+#define CFG_TUD_AUDIO_ENABLE_FEEDBACK_FORMAT_CORRECTION     1
 #define CFG_TUD_AUDIO_ENABLE_EP_OUT               1    // enables tud_audio_available, tud_audio_read, tud_audio_clear_ep_out_ff, audio_feedback_params_t
 #define CFG_TUD_AUDIO_ENABLE_EP_IN                1    // enables tud_audio_get_ep_in_ff, tud_audio_write
 #define CFG_TUD_AUDIO_FUNC_1_N_AS_INT              2

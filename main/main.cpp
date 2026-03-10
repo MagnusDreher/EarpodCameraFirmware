@@ -79,7 +79,7 @@ extern "C" void app_main(void)
 
     ESP_LOGI(TAG, "Starting Earpod Camera Firmware...");
 
-     vTaskDelay(pdMS_TO_TICKS(5000));
+     vTaskDelay(pdMS_TO_TICKS(1000));
 
     // Initialize audio input (microphone)
     ESP_LOGI(TAG, "Initializing microphone...");
